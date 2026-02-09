@@ -1,0 +1,309 @@
+### Product Management API - REST Client Tests
+### Base URL
+@baseUrl = http://localhost:8080
+@userId = 1
+
+### ============================================
+### Product CRUD Operations
+### ============================================
+
+### TC-001: Create Product (Success)
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "productCode": "PRD-000001",
+  "productName": "삼성 노트북 갤럭시북",
+  "description": "최신 모델 노트북",
+  "price": 1500000,
+  "stock": 10,
+  "sellerId": 1,
+  "categoryId": 1
+}
+
+### TC-002: Create Product - Missing Required Field (price)
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "productCode": "PRD-000002",
+  "productName": "테스트 상품",
+  "stock": 10,
+  "sellerId": 1,
+  "categoryId": 1
+}
+
+### TC-003: Create Product - Duplicate Product Code
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "productCode": "PRD-000001",
+  "productName": "중복 상품",
+  "description": "중복 테스트",
+  "price": 2000000,
+  "stock": 5,
+  "sellerId": 1,
+  "categoryId": 1
+}
+
+### TC-004: Get Product by Code
+GET {{baseUrl}}/api/products/PRD-000001
+
+### TC-005: Get Product - Not Found
+GET {{baseUrl}}/api/products/PRD-999999
+
+### TC-006: Update Product (Own Product)
+PUT {{baseUrl}}/api/products/PRD-000001
+Content-Type: application/json
+X-User-Id: 1
+
+{
+  "productName": "수정된 상품명",
+  "description": "수정된 설명",
+  "price": 2000000,
+  "version": 0
+}
+
+### TC-007: Update Product (Other User's Product - Should Fail)
+PUT {{baseUrl}}/api/products/PRD-000001
+Content-Type: application/json
+X-User-Id: 2
+
+{
+  "productName": "해킹 시도",
+  "price": 1000,
+  "version": 0
+}
+
+### TC-008: Delete Product
+DELETE {{baseUrl}}/api/products/PRD-000001
+X-User-Id: 1
+
+### TC-009: Get Product List (Pagination)
+GET {{baseUrl}}/api/products?page=0&size=20
+
+### TC-010: Get Product List (Page 2)
+GET {{baseUrl}}/api/products?page=1&size=10
+
+### ============================================
+### Stock Management Operations
+### ============================================
+
+### TC-011: Increase Stock
+POST {{baseUrl}}/api/stock/PRD-000001/adjust
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "adjustmentType": "INCREASE",
+  "quantity": 50,
+  "reason": "입고"
+}
+
+### TC-012: Decrease Stock
+POST {{baseUrl}}/api/stock/PRD-000001/adjust
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "adjustmentType": "DECREASE",
+  "quantity": 30,
+  "reason": "출고"
+}
+
+### TC-013: Decrease Stock - Insufficient Stock (Should Fail)
+POST {{baseUrl}}/api/stock/PRD-000001/adjust
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "adjustmentType": "DECREASE",
+  "quantity": 1000,
+  "reason": "대량 출고"
+}
+
+### TC-014: Stock Correction
+POST {{baseUrl}}/api/stock/PRD-000001/adjust
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "adjustmentType": "CORRECTION",
+  "quantity": 100,
+  "reason": "재고 실사 후 보정"
+}
+
+### TC-015: Get Stock History
+GET {{baseUrl}}/api/stock/PRD-000001/history?page=0&size=10
+
+### ============================================
+### Security & Validation Tests
+### ============================================
+
+### TC-016: XSS Prevention Test
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "productCode": "PRD-XSS001",
+  "productName": "<script>alert('XSS')</script>",
+  "description": "<img src=x onerror=alert('XSS')>",
+  "price": 10000,
+  "stock": 100,
+  "sellerId": 1,
+  "categoryId": 1
+}
+
+### TC-017: Price Validation - Not Divisible by 100 (Should Fail)
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "productCode": "PRD-PRICE001",
+  "productName": "가격 검증 테스트",
+  "description": "가격은 100원 단위여야 함",
+  "price": 10050,
+  "stock": 100,
+  "sellerId": 1,
+  "categoryId": 1
+}
+
+### TC-018: Invalid Product Code Format (Should Fail)
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "productCode": "INVALID",
+  "productName": "잘못된 상품코드",
+  "description": "상품코드 형식: PRD-XXXXXX",
+  "price": 10000,
+  "stock": 100,
+  "sellerId": 1,
+  "categoryId": 1
+}
+
+### TC-019: Negative Price (Should Fail)
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "productCode": "PRD-000099",
+  "productName": "음수 가격 테스트",
+  "description": "가격은 0 이상이어야 함",
+  "price": -1000,
+  "stock": 100,
+  "sellerId": 1,
+  "categoryId": 1
+}
+
+### TC-020: Negative Stock (Should Fail)
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+X-User-Id: {{userId}}
+
+{
+  "productCode": "PRD-000098",
+  "productName": "음수 재고 테스트",
+  "description": "재고는 0 이상이어야 함",
+  "price": 10000,
+  "stock": -10,
+  "sellerId": 1,
+  "categoryId": 1
+}
+
+### ============================================
+### API Documentation
+### ============================================
+
+### Get OpenAPI JSON
+GET {{baseUrl}}/api-docs
+
+### Get Swagger UI (Browser)
+# Open in browser: {{baseUrl}}/swagger-ui.html
+
+### ============================================
+### Bulk Test Data Creation
+### ============================================
+
+### Create Product 1
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+X-User-Id: 1
+
+{
+  "productCode": "PRD-000101",
+  "productName": "상품 1",
+  "description": "테스트 상품 1",
+  "price": 10000,
+  "stock": 100,
+  "sellerId": 1,
+  "categoryId": 1
+}
+
+### Create Product 2
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+X-User-Id: 1
+
+{
+  "productCode": "PRD-000102",
+  "productName": "상품 2",
+  "description": "테스트 상품 2",
+  "price": 20000,
+  "stock": 50,
+  "sellerId": 1,
+  "categoryId": 1
+}
+
+### Create Product 3
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+X-User-Id: 1
+
+{
+  "productCode": "PRD-000103",
+  "productName": "상품 3",
+  "description": "테스트 상품 3",
+  "price": 30000,
+  "stock": 75,
+  "sellerId": 1,
+  "categoryId": 1
+}
+
+### Create Product 4
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+X-User-Id: 1
+
+{
+  "productCode": "PRD-000104",
+  "productName": "상품 4",
+  "description": "테스트 상품 4",
+  "price": 40000,
+  "stock": 25,
+  "sellerId": 1,
+  "categoryId": 1
+}
+
+### Create Product 5
+POST {{baseUrl}}/api/products
+Content-Type: application/json
+X-User-Id: 1
+
+{
+  "productCode": "PRD-000105",
+  "productName": "상품 5",
+  "description": "테스트 상품 5",
+  "price": 50000,
+  "stock": 150,
+  "sellerId": 1,
+  "categoryId": 1
+}
